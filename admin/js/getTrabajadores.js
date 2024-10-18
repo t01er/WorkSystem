@@ -31,14 +31,15 @@ async function cargarTrabajadores() {
                         </div>
                     </div>
                 </td>
-                <td class="px-4 py-3 text-sm  ">${trabajador.sexo}</td>
+                <td class="px-4 py-3 text-sm">${trabajador.sexo}</td>
                 <td class="px-4 py-3 text-sm">${trabajador.nombre_puesto}</td>
                 <td class="px-4 py-3 text-sm">${trabajador.turno}</td>
                 <td class="px-4 py-3 text-sm">${trabajador.hora_limite}</td>
                 <td class="px-4 py-3 text-sm">${trabajador.salida}</td>
                 <td class="px-4 py-3 text-xs">
-                    <span class="px-2 py-1 font-semibold leading-tight text-green-700 bg-green-100 rounded-full dark:bg-green-700 dark:text-green-100 ${trabajador.estado ? 'text-green-700 bg-green-100' : 'text-red-700 bg-red-100'} rounded-full">
-                        ${trabajador.estado ? 'Activo' : 'Inactivo'}
+                    <span class="px-2 py-1 font-semibold leading-tight rounded-full 
+                        ${trabajador.estado === 1 ? 'text-green-700 bg-green-100 dark:bg-green-700 dark:text-green-100' : 'text-black bg-gray-100 dark:bg-gray-700 dark:text-gray-100'}">
+                        ${trabajador.estado === 1 ? 'Activo' : 'Inactivo'}
                     </span>
                 </td>
                 <td class="px-4 py-3 text-sm">${trabajador.numero_cel}</td>
@@ -52,7 +53,8 @@ async function cargarTrabajadores() {
                                 <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path>
                             </svg>
                         </button>
-                        <button class="flex items-center justify-between px-2 py-2 text-sm font-medium leading-5 text-purple-600 rounded-lg dark:text-gray-400 focus:outline-none focus:shadow-outline-gray" aria-label="Delete">
+                        <button class="downloadBtn flex items-center justify-between px-2 py-2 text-sm font-medium leading-5 text-purple-600 rounded-lg dark:text-gray-400 focus:outline-none focus:shadow-outline-gray"
+                            aria-label="Download QR" data-barcode="${trabajador.dni}">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 3.75 9.375v-4.5ZM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5ZM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 13.5 9.375v-4.5Z" />
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 6.75h.75v.75h-.75v-.75ZM6.75 16.5h.75v.75h-.75v-.75ZM16.5 6.75h.75v.75h-.75v-.75ZM13.5 13.5h.75v.75h-.75v-.75ZM13.5 19.5h.75v.75h-.75v-.75ZM19.5 13.5h.75v.75h-.75v-.75ZM19.5 19.5h.75v.75h-.75v-.75ZM16.5 16.5h.75v.75h-.75v-.75Z" />
@@ -71,10 +73,78 @@ async function cargarTrabajadores() {
             });
         });
 
+        // Agregar eventos a los botones de descarga
+        document.querySelectorAll('.downloadBtn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const barcode = e.currentTarget.dataset.barcode;
+                descargarQR(barcode);
+            });
+        });
     } catch (error) {
         console.error('Error al cargar trabajadores:', error);
     }
 }
+
+function descargarQR(barcode) {
+    
+    var productUrl = barcode;
+
+    // Generar el QR Code
+    QRCode.toDataURL(productUrl, {
+        width: 256,
+        height: 256,
+        color: {
+            dark: '#000000',
+            light: '#ffffff'
+        }
+    }).then(function (url) {
+        var a = document.createElement("a");
+        a.setAttribute("download", "qr_" + barcode + ".png");
+        a.setAttribute("href", url);
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }).catch(function (error) {
+        console.error(error);
+    });
+}
+
+async function cargarPuestosHorarios() {
+    try {
+        const response = await fetch('api/consultarPuestosHorarios.php');
+        if (!response.ok) {
+            throw new Error('Error al obtener puestos y horarios: ' + response.status);
+        }
+
+        const data = await response.json();
+
+        // Cargar puestos en el selector
+        const puestoSelect = document.getElementById('editPuesto');
+        puestoSelect.innerHTML = ''; // Limpiar opciones previas
+        data.puestos.forEach(puesto => {
+            const option = document.createElement('option');
+            option.value = puesto.id_puesto;
+            option.textContent = puesto.nombre_puesto;
+            puestoSelect.appendChild(option);
+        });
+
+        // Cargar horarios en el selector
+        const horarioSelect = document.getElementById('editHorario');
+        horarioSelect.innerHTML = ''; // Limpiar opciones previas
+        data.horarios.forEach(horario => {
+            const option = document.createElement('option');
+            option.value = horario.id_horario;
+            option.textContent = horario.turno;
+            horarioSelect.appendChild(option);
+        });
+
+    } catch (error) {
+        console.error('Error al cargar puestos y horarios:', error);
+    }
+}
+
+// Llamar a la función al abrir el modal o cargar la página
+cargarPuestosHorarios();
 
 
 
@@ -82,7 +152,6 @@ function abrirModalEdicion(idTrabajador) {
     const trabajador = listaTrabajadores.find(t => t.id_trabajador == idTrabajador);
 
     if (trabajador) {
-        // Rellenar los campos del formulario con los datos del trabajador
         document.getElementById('editIdTrabajador').value = trabajador.id_trabajador;
         document.getElementById('editNombres').value = trabajador.nombres;
         document.getElementById('editApellidoP').value = trabajador.apellido_p;
@@ -97,33 +166,13 @@ function abrirModalEdicion(idTrabajador) {
         const imgPath = trabajador.files ? `uploads/${trabajador.files}` : 'default-image.png';
         document.getElementById('editImagePreview').src = imgPath;
 
-        // Crear un conjunto único de puestos
-        const puestosUnicos = [...new Set(listaTrabajadores.map(t => t.nombre_puesto))];
+        // Seleccionar el puesto del trabajador
         const puestoSelect = document.getElementById('editPuesto');
-        puestoSelect.innerHTML = ''; // Limpiar las opciones anteriores
-        puestosUnicos.forEach(puesto => {
-            const option = document.createElement('option');
-            option.value = listaTrabajadores.find(t => t.nombre_puesto === puesto).id_puesto;
-            option.textContent = puesto;
-            if (trabajador.nombre_puesto === puesto) {
-                option.selected = true; // Seleccionar el puesto actual
-            }
-            puestoSelect.appendChild(option);
-        });
+        puestoSelect.value = trabajador.id_puesto;
 
-        // Crear un conjunto único de horarios (turnos)
-        const horariosUnicos = [...new Set(listaTrabajadores.map(t => t.turno))];
+        // Seleccionar el horario del trabajador
         const horarioSelect = document.getElementById('editHorario');
-        horarioSelect.innerHTML = ''; // Limpiar las opciones anteriores
-        horariosUnicos.forEach(turno => {
-            const option = document.createElement('option');
-            option.value = listaTrabajadores.find(t => t.turno === turno).id_horario;
-            option.textContent = turno;
-            if (trabajador.turno === turno) {
-                option.selected = true; // Seleccionar el horario actual
-            }
-            horarioSelect.appendChild(option);
-        });
+        horarioSelect.value = trabajador.id_horario;
 
         // Mostrar el modal de edición
         document.getElementById('editModal').classList.remove('hidden');
@@ -131,11 +180,12 @@ function abrirModalEdicion(idTrabajador) {
 }
 
 
-
 // Cerrar el modal de edición al hacer clic en el botón de cancelar
-document.getElementById('closeModalBtn').addEventListener('click', () => {
+document.getElementById('closeModalBtn2').addEventListener('click', () => {
     document.getElementById('editModal').classList.add('hidden');
 });
+
+
 
 // Manejar el envío del formulario de edición
 document.getElementById('editForm').addEventListener('submit', async function (e) {
@@ -143,6 +193,7 @@ document.getElementById('editForm').addEventListener('submit', async function (e
 
     // Crear un objeto FormData para enviar archivos
     const formData = new FormData();
+
 
     // Obtener los valores de los campos del formulario
     const id_trabajador = document.getElementById('editIdTrabajador').value;
@@ -175,6 +226,8 @@ document.getElementById('editForm').addEventListener('submit', async function (e
     for (let i = 0; i < files.length; i++) {
         formData.append('files[]', files[i]); // El nombre puede ser un array para manejar múltiples archivos
     }
+
+    console.log([...formData]);  // Para verificar los datos antes de enviarlos
 
     try {
         // Enviar los datos al servidor mediante fetch

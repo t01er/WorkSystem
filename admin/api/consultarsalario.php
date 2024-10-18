@@ -9,7 +9,7 @@ if (!$conn) {
     exit;
 }
 
-$stmt = $conn->query("CALL getSalario()");
+$stmt = $conn->query("CALL CalcularTotalSoles()");
 
 if (!$stmt) {
     echo json_encode(['error' => 'Error en la consulta: ' . $conn->error]);

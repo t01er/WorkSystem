@@ -1,7 +1,7 @@
 <?php
 class Database {
     private $host = "localhost"; 
-    private $db_name = "merinocontrol"; 
+    private $db_name = "worksystem"; 
     private $username = "root";
     private $password = "";
     public $conn;
